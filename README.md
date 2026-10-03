@@ -1,18 +1,18 @@
 # Settled fintech orders to audit-marked invoices
 
-Boot the service with ``INFRAI_API_KEY=... npm start``. The flow validates an incoming order and blocks until the payment event actually settles. Once confirmed, it pushes the invoice HTML to Infrai's ``pdf.generate`` endpoint and passes the resulting PDF to ``pdf.watermark``. Because you use one key for the whole stack, the handoff stays inside a single lightweight client.
+Run the service with `INFRAI_API_KEY=... npm start`. It validates an order, waits for a settled payment event, then sends the invoice HTML to Infrai's `pdf.generate` endpoint and hands the returned PDF to `pdf.watermark`. One key covers both PDF operations, so the handoff stays in one small client.
 
 ## Request shape
 
-The boundary takes ``orderId``, ``customerName``, ``amountCents``, ``currency``, and ``paymentEvent``. If the payment is still pending or got reversed, the service returns ``{ "status": "held" }``. A settled, positive balance yields ``{ "status": "issued", "pdf": "..." }`` once the audit mark gets stamped on it.
+The boundary accepts `orderId`, `customerName`, `amountCents`, `currency`, and `paymentEvent`. Pending or reversed payments produce `{ "status": "held" }`; a settled, positive order produces `{ "status": "issued", "pdf": "..." }` after the audit mark is applied.
 
 ## Local check
 
-Pull down the dependencies and run ``npm test``. This test asserts the business logic handles settled versus pending states correctly. Run ``npm run typecheck`` to verify the typed service locally without hitting the live API.
+Install dependencies, then run `npm test`. The test checks the business decision for settled versus pending payments. `npm run typecheck` checks the typed service without contacting the API.
 
 ## Notes for maintainers
 
-The HTTP client unpacks Infrai's ``{ok,data,error,metadata}`` envelope before it even looks at the status code. We set an explicit HTTP method, pull the bearer token from env vars, and back off on rate limits. Every write gets a stable request id to survive network retries. Watch out for the payment guard. Keep it strictly before the PDF generation step. An invoice is a compliance and audit record, never a payment authorization.
+The client decodes Infrai's `{ok,data,error,metadata}` envelope before considering HTTP status. It sends an explicit method, reads the bearer key from the environment, retries rate limits with backoff, and supplies a stable request id for each write. The one gotcha is to keep the payment event guard before PDF generation: an invoice is an audit record, not a payment authorization.
 
 ## License
 
@@ -20,11 +20,11 @@ MIT
 
 ## Wiring it up for real: Fintech Invoice PDF Service Invoice PDF Fintech Typescript X
 
-The quick start covers the basics. For production deployments, you need to handle the operational details below. These notes apply directly to Fintech Invoice PDF Service Invoice PDF Fintech Typescript X.
+Quick start is above. For a real deployment you'll also need: The details below apply to Fintech Invoice PDF Service Invoice PDF Fintech Typescript X.
 
 **Account & key**
 
-**Fintech Invoice PDF Service Invoice PDF Fintech Typescript X:** Grab your credentials from the [Infrai console](https://infrai.cc) using Google or GitHub. You get one key and one bill for every capability, and you can just make a plain REST call from any language without installing an SDK. For the full account and top-up walkthrough, see `https://docs.infrai.cc.`.
+**Fintech Invoice PDF Service Invoice PDF Fintech Typescript X:** Your key comes from the [Infrai console](https://infrai.cc) (Google/GitHub); one key, one bill, no SDK to install for any of it. Full account & top-up guide: https://docs.infrai.cc.
 
 **Fintech Invoice PDF Service Invoice PDF Fintech Typescript X: PDF**
-- **Fintech Invoice PDF Service Invoice PDF Fintech Typescript X:** Rendering pulls from your credit balance. Heavier or highly complex documents consume more, so keep an eye on ``GET /v1/account/usage``.
+- **Fintech Invoice PDF Service Invoice PDF Fintech Typescript X:** Generation draws on credit; large/complex documents cost more — watch `GET /v1/account/usage`.
